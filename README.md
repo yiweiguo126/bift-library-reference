@@ -1,0 +1,100 @@
+# 北服图书馆参考咨询 Skill（bift-library-reference）
+
+> **适用对象**：本 Skill 适合北京服装学院图书馆的读者使用，包括在校师生、退休教师、校友、校外读者，以及关注北服图书馆资源与服务的各界人士。
+
+这是一个面向北京服装学院图书馆参考咨询场景的 WorkBuddy Skill。它以参考馆员的身份工作：先帮助提问者把问题问准，再依据授权信息源给出可核对的简短答案；涉及资源使用方式时完整照录馆方原文，涉及统计与合并时逐项标注来源与处理过程。Skill 自足运行，不依赖外部项目文件。
+
+## 它能回答什么
+
+| 主题 | 典型问题示例 |
+|---|---|
+| 馆藏与检索 | 查某本书有没有、书刊检索、新书通报、读者中心续借、读者留言荐购 |
+| 借阅服务 | 借几册、借多久、逾期占用费、馆藏分布、代借、通借通还、馆际互借、文献传递 |
+| 空间与设备 | 开放时间、研学空间与教师阅享（阅享）空间、研讨室、座位预约、存包柜、静音舱 |
+| 数字资源 | 中国知网、WGSN、读秀等 52 个已登记资源的访问与使用条件、账号注册、校外使用 |
+| 学习支持 | 咨询方式、讲座培训、60 分钟讲座安排、课程教学、入馆培训 |
+| 科研支持 | 学科服务与联络馆员、代查代检、核心期刊导引 |
+| 资源建设 | 资源荐购、书刊捐赠、学位论文提交 |
+| 馆情与资讯 | 馆史沿革、机构设置与电话、服务项目、节假日与寒暑假开馆安排 |
+| 文档类 | 规章制度条款、2018—2025 年度数据、校历周次日期、信息中心服务说明 |
+
+它**不是**通用问答机器人：不使用模型自带知识、不联网搜索补路径、不代写论文、不评价资源优劣。资料未写即回答不知道；资料只写了一部分，就照录这一部分，不自行补全。
+
+## 安装与使用
+
+1. 下载或克隆本仓库。
+2. 将整个目录（含 `SKILL.md`、`references/`、`scripts/`）放到 WorkBuddy 的 Skill 目录：
+   - 用户级：`~/.workbuddy/skills/bift-library-reference/`
+   - 项目级：`<项目目录>/.workbuddy/skills/bift-library-reference/`
+3. 确认 `SKILL.md` 位于目录根部，且其 YAML front matter 完整。新开一个对话，直接用自然语言提问即可，Skill 会按描述自动加载。
+
+例如：
+
+- 「静音舱怎么预约？」
+- 「教师阅享空间需要预约吗？」
+- 「2026 年暑假图书馆开馆时间是什么？」
+- 「2018 到 2025 年借阅量最高的 5 本书是哪些？」
+- 「研究生能借几本书、借多久？」
+
+提问时不必使用栏目原名，Skill 会先做语义匹配；信息不足时它会只追问一个最关键的问题。每条答案末尾都附「参考原文出处」，便于核对。
+
+## 目录结构
+
+```
+.
+├── SKILL.md                  # Skill 主文件：信息源白名单、路由规则、输出格式与硬规则
+├── README.md                 # 本说明
+├── _icon.png                 # Skill 图标
+├── 该SKILL测试提问.md         # 23 个实测问句与结论记录（维护参考）
+├── references/
+│   ├── 规章制度/              # 16 篇馆内规章制度文档
+│   ├── 图书馆年度数据/         # 2018—2025 八个年度主文档、OCR 转写与源页清单
+│   ├── 校历/                  # 2026—2027 学年第一学期校历与当前学期定位
+│   └── 信息中心.md            # 校园网、VPN、邮箱、统一身份认证等服务说明
+└── scripts/
+    ├── fetch_space_service.py    # 空间服务五页
+    ├── fetch_study_research.py   # 学习支持、科研支持、资源建设、借阅服务各页
+    ├── fetch_library_info.py     # 馆情信息三页
+    ├── fetch_news.py             # 最新资讯列表与正文
+    └── fetch_yanxue_space.py     # 研学空间取页兼容入口
+```
+
+## 信息源与回答边界
+
+Skill 只读取三类材料：
+
+1. `SKILL.md` 中登记的授权 URL（主站 `lib.bift.edu.cn` 公开页面，以及四条 OPAC 入口链接）；
+2. `references/` 下的随附文档；
+3. 用户在本次会话中明确提供并说明用途的临时文档。
+
+不在上述范围内的页面、域名、缓存与模型记忆一律不作为答案依据。开放时间、预约规则、借阅细则、最新资讯、馆情信息等定期更新的内容走动态接口现取，不固化为静态文本；规章制度、年度数据、校历与信息中心内容直接读本地文档。
+
+授权材料中若出现校园网内地址（如 `10.104.x.x`），Skill 只按原文照录，不访问、不推测其内容，并将其呈现为不可点击的行内代码。这类地址仅在校园网环境中可用，公开仓库中的记录仅为原文忠实转写。
+
+基于授权材料的统计与合并属于派生结果：Skill 会标明派生性质、逐项标注出处，并附 1—3 句处理说明；口径不一致时并列保留原文，不替用户取舍。
+
+## 脚本（维护者使用）
+
+动态栏目正文需现取，脚本仅依赖 Python 3 标准库：
+
+```bash
+python3 scripts/fetch_space_service.py --page open_time|yanxue|seat|locker|quiet
+python3 scripts/fetch_study_research.py --page consult|lecture|lecture_60|lecture_topics|course|orientation|subject|retrieval|core_journals
+python3 scripts/fetch_study_research.py --page recommend|donation|thesis
+python3 scripts/fetch_study_research.py --page location|borrow_rule|proxy_borrow|cross_campus|interlibrary|doc_delivery
+python3 scripts/fetch_library_info.py --page about|org|service
+python3 scripts/fetch_news.py --list | --search 关键词 | --data-id <id>
+```
+
+`--page all`、`--group` 之类的批量参数仅供馆员核对，单次作答不应使用。接口地址、页面 ID 与实例参数登记在 `SKILL.md` 对应章节，站点改版后由维护者核对更新。
+
+## 维护与版本
+
+- 授权 URL、页面 ID、接口参数与硬规则集中在 `SKILL.md`，日常维护优先修改该文件。
+- `references/` 中文档与馆方公开栏目内容保持一致；年度数据的源页直链保存在各年度 `skeleton.md`，原始图片不随仓库分发。
+- 内部工作记忆、Python 编译缓存与系统元数据不纳入版本管理（见 `.gitignore`）。
+- 本仓库使用 Git 进行版本管理；每次改动应提交清晰的变更说明。
+
+## 来源与责任
+
+内容转写自北京服装学院图书馆公开网页、馆内规章制度、年度报告、校历及信息中心说明，版权与最终解释权归原权利方所有。本 Skill 仅作参考咨询辅助，答案以馆方原文与服务台答复为准。

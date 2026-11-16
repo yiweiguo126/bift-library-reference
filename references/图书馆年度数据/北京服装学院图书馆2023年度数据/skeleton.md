@@ -1,0 +1,11 @@
+北京服装学院图书馆2023年度数据
+
+![](https://lib.bift.edu.cn/editor/pc/files/image?resid=4715dcd87c3ff78b91ac3d65a3c003cf02886cd22ab572b1ff2a0d3002059deb88cc51b500515fbdcef0ab1610e26d32c7425b0c46f8f66c928d96c49ab25f90a5c0940275553a7c80b2c665990916e2?rw=2560&rh=21600&_fileSize=31691275&_orientation=1)
+
+![](https://lib.bift.edu.cn/editor/pc/files/image?resid=4715dcd87c3ff78b91ac3d65a3c003cf02886cd22ab572b1ff2a0d3002059deb88cc51b500515fbdcef0ab1610e26d32c7425b0c46f8f66c928d96c49ab25f90749faebec84d1cdb80b2c665990916e2?rw=2560&rh=21600&_fileSize=6249529&_orientation=1)
+
+![](https://lib.bift.edu.cn/editor/pc/files/image?resid=4715dcd87c3ff78b91ac3d65a3c003cf02886cd22ab572b1ff2a0d3002059deb88cc51b500515fbdcef0ab1610e26d32c7425b0c46f8f66c928d96c49ab25f90fb98783ff25da0dd80b2c665990916e2?rw=2560&rh=21600&_fileSize=6057509&_orientation=1)
+
+![](https://lib.bift.edu.cn/editor/pc/files/image?resid=4715dcd87c3ff78b91ac3d65a3c003cf02886cd22ab572b1ff2a0d3002059deb88cc51b500515fbdcef0ab1610e26d32c7425b0c46f8f66c928d96c49ab25f90cc601c7702c5f83680b2c665990916e2?rw=2560&rh=21600&_fileSize=11719357&_orientation=1)
+
+![](https://lib.bift.edu.cn/editor/pc/files/image?resid=4715dcd87c3ff78b91ac3d65a3c003cf02886cd22ab572b1ff2a0d3002059deb88cc51b500515fbdcef0ab1610e26d32c7425b0c46f8f66c928d96c49ab25f906f752026c48f887f80b2c665990916e2?rw=2560&rh=15840&_fileSize=9436059&_orientation=1)
