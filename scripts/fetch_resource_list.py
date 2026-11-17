@@ -21,9 +21,10 @@
     条目 url 字段内含真正的详情页 /engine2/d/<dataId>/2639617/0（dataId 与条目 id 不同，
     必须从返回值取，不得自行拼接）。
 
-重要：资源详情页正文由页面脚本渲染后加载，静态取回只有导航框架与模板残留。
-本脚本只负责清单与详情页地址，不打印正文。需要正文时按 SKILL.md
-「资源清单动态接口路由」办理：能渲染则照录，渲染不可用则走入口式回答。
+重要：本脚本只负责清单与详情页地址，不打印正文。正文用同目录
+fetch_resource_detail.py 取（详情页正文内嵌在页面内联脚本 data.content，
+静态可解析、无需渲染）：
+    python3 scripts/fetch_resource_detail.py --search 元阅读
 
 用法：
     python3 scripts/fetch_resource_list.py --list                    # 试用资源清单（默认 trial）
@@ -163,7 +164,7 @@ def print_block(label, type_id, items, total_records, total_page, url, matched=N
         else:
             print("     详情页：（本条无站内详情页，可能为站外入口，照录名称即可、不访问）")
     print()
-    print("注：详情页正文需在浏览器中渲染后取；脚本不打印正文，取不到即按入口式回答给上列链接。")
+    print("注：需正文时运行 fetch_resource_detail.py --search <关键词> 或 --url <详情页>，静态解析即可取全，不必渲染。")
 
 
 def main():

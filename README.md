@@ -69,6 +69,7 @@ https://github.com/yiweiguo126/bift-library-reference
     ├── fetch_library_info.py     # 馆情信息三页
     ├── fetch_news.py             # 最新资讯列表与正文
     ├── fetch_resource_list.py    # 数字资源三类清单（常用／特色／试用）现查
+    ├── fetch_resource_detail.py  # 资源详情页正文取文（静态解析内联脚本）
     └── fetch_yanxue_space.py     # 研学空间取页兼容入口
 ```
 
@@ -98,13 +99,17 @@ python3 scripts/fetch_study_research.py --page location|borrow_rule|proxy_borrow
 python3 scripts/fetch_library_info.py --page about|org|service
 python3 scripts/fetch_news.py --list | --search 关键词 | --data-id <id>
 python3 scripts/fetch_resource_list.py --search 关键词 [--type trial|feature|common|all]
+python3 scripts/fetch_resource_detail.py --search 关键词 [--type trial|feature|common]
+python3 scripts/fetch_resource_detail.py --url <详情页 URL> | --data-id <dataId>
 ```
 
 `--page all`、`--group` 之类的批量参数仅供馆员核对，单次作答不应使用。接口地址、页面 ID 与实例参数登记在 `SKILL.md` 对应章节，站点改版后由维护者核对更新。
 
-数字资源的清单（常用／特色／试用）随资源新增与到期撤销变动，因此不逐条登记链接，改为运行时查清单接口取条目名、发布时间与详情页地址。资源详情页正文由页面脚本渲染后才出现，静态取回只有导航框架；取不到正文时 Skill 会给可点开的清单页与详情页链接，由读者自行打开，不凭条目名推测内容。
+数字资源的清单（常用／特色／试用）随资源新增与到期撤销变动，因此不逐条登记链接，改为运行时查清单接口取条目名、发布时间与详情页地址。资源详情页正文**内嵌在页面内联脚本的 `data.content` 字段**（2026-11-17 实测），`fetch_resource_detail.py` 静态解析即可取全文，与浏览器所见一致，无需渲染或浏览器；正文中的图片以［图片］占位，图片内文字不照录。仅在解析失败（退出码 3）时，Skill 才降级为「入口式回答」，给可点开的清单页与详情页链接由读者自行打开，不凭条目名推测内容。
 
 ## 维护与版本
+
+**当前版本 v1.03（2026-11-17）**：优化「特色资源」与「试用资源」的获取与回复方式——两类资源不逐条登记链接，改由清单接口现取条目；详情正文改由 `fetch_resource_detail.py` 静态解析页面内联脚本取回，不再依赖浏览器渲染，取不到时才降级为入口式回答。
 
 - 授权 URL、页面 ID、接口参数与硬规则集中在 `SKILL.md`，日常维护优先修改该文件。
 - `references/` 中文档与馆方公开栏目内容保持一致；年度数据的源页直链保存在各年度 `skeleton.md`，原始图片不随仓库分发。
