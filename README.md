@@ -22,6 +22,18 @@
 
 ## 安装与使用
 
+**方式一：让智能体直接安装（推荐）**
+
+打开 WorkBuddy 或其他支持安装 Skill 的智能体，把下面这个链接复制过去：
+
+```
+https://github.com/yiweiguo126/bift-library-reference
+```
+
+然后说：「帮我安装这个 SKILL」。智能体会拉取仓库并完成安装，装好即可直接提问。
+
+**方式二：手动下载安装**
+
 1. 下载或克隆本仓库。
 2. 将整个目录（含 `SKILL.md`、`references/`、`scripts/`）放到 WorkBuddy 的 Skill 目录：
    - 用户级：`~/.workbuddy/skills/bift-library-reference/`
