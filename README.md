@@ -68,6 +68,7 @@ https://github.com/yiweiguo126/bift-library-reference
     ├── fetch_study_research.py   # 学习支持、科研支持、资源建设、借阅服务各页
     ├── fetch_library_info.py     # 馆情信息三页
     ├── fetch_news.py             # 最新资讯列表与正文
+    ├── fetch_resource_list.py    # 数字资源三类清单（常用／特色／试用）现查
     └── fetch_yanxue_space.py     # 研学空间取页兼容入口
 ```
 
@@ -96,9 +97,12 @@ python3 scripts/fetch_study_research.py --page recommend|donation|thesis
 python3 scripts/fetch_study_research.py --page location|borrow_rule|proxy_borrow|cross_campus|interlibrary|doc_delivery
 python3 scripts/fetch_library_info.py --page about|org|service
 python3 scripts/fetch_news.py --list | --search 关键词 | --data-id <id>
+python3 scripts/fetch_resource_list.py --search 关键词 [--type trial|feature|common|all]
 ```
 
 `--page all`、`--group` 之类的批量参数仅供馆员核对，单次作答不应使用。接口地址、页面 ID 与实例参数登记在 `SKILL.md` 对应章节，站点改版后由维护者核对更新。
+
+数字资源的清单（常用／特色／试用）随资源新增与到期撤销变动，因此不逐条登记链接，改为运行时查清单接口取条目名、发布时间与详情页地址。资源详情页正文由页面脚本渲染后才出现，静态取回只有导航框架；取不到正文时 Skill 会给可点开的清单页与详情页链接，由读者自行打开，不凭条目名推测内容。
 
 ## 维护与版本
 
