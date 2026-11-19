@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """现取北服图书馆「学习支持 / 科研支持 / 资源建设 / 借阅服务」下动态栏目页的最新正文。
 
-页面 ID（2026-11-16 定位，详见 SKILL.md「学研支持动态接口路由」）：
+页面 ID（2026-11-16 定位，详见 SKILL.md「学习支持与科研支持动态接口路由」）：
 
 学习支持（learning）
     consult        咨询服务           typeId=5695038
@@ -31,7 +31,9 @@
 
 同空间服务五页共用接口与参数：
     GET https://lib.bift.edu.cn/engine2/general/1690193/more/detail
-    engineInstanceId=2412452 & typeId=<见上> & sw= & sign=e1c07d97d45eccffc1e99fff0be5699b
+    engineInstanceId=2412452 & typeId=<见上> & sw= & sign=<运行时从栏目页 var sign 动态读取>
+sign 随站点改版变化，每次运行复用 fetch_resource_list.read_sign() 读取，读不到才回退登记常量
+（旧值 e1c07d97d45eccffc1e99fff0be5699b 已失效；2026-11-19 实测接口报 mh_engine_50004）。
 
 少数栏目正文不在 introduction，而在条目列表里（代查代检），列表接口为：
     GET https://lib.bift.edu.cn/engine2/general/1690193/type/more-clear-datas
@@ -46,7 +48,7 @@
     python3 scripts/fetch_study_research.py --page lecture_60
     python3 scripts/fetch_study_research.py --page retrieval --data-id 10802449
     python3 scripts/fetch_study_research.py --group learning      # 仅供馆员核对
-    python3 scripts/fetch_study_research.py --page retrieval --list-only
+    python3 scripts/fetch_study_research.py --page retrieval       # 列条目；再按 --data-id 取正文
 """
 
 import argparse
@@ -58,11 +60,13 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+import fetch_resource_list as rl  # 复用其 read_sign()：栏目页动态读 sign
+
 SITE = "https://lib.bift.edu.cn"
 COMMON = {
     "appId": "1690193",
     "engineInstanceId": "2412452",
-    "sign": "e1c07d97d45eccffc1e99fff0be5699b",
+    "sign": "e1c07d97d45eccffc1e99fff0be5699b",  # 登记常量（旧值，仅兜底）
     "websiteId": "186080",
     "pageId": "331274",
     "wfwfid": "33400",
@@ -244,10 +248,16 @@ def fetch_list(params, type_id, timeout):
     try:
         obj = json.loads(raw)
     except json.JSONDecodeError:
-        return []
-    # 正文型栏目（如 lecture_60）该接口返回 data:null 或无 datas 节点，逐层判断避免 None.get
+        raise SystemExit(f"条目列表接口返回非 JSON（可能改版/拦截）：{raw[:200]}")
+    # 业务错误（HTTP 200 但 code=0/data=null，如 sign 失效的 mh_engine_50004）须显式报错，
+    # 不得静默当成「无条目」，否则会误答成「该栏目无相关内容」。
     if not isinstance(obj, dict):
-        return []
+        raise SystemExit(f"条目列表接口返回异常结构：{raw[:200]}")
+    msg = obj.get("message") or obj.get("description") or ""
+    if str(obj.get("code")) not in ("1",) and ("mh_engine" in str(msg) or obj.get("data") is None):
+        raise SystemExit(f"条目列表接口业务错误：{msg or '未知'}（{obj.get('code')}）；"
+                         f"若为 sign 失效请核对栏目页 var sign。接口：{list_url(params, type_id)}")
+    # 正文型栏目（如 lecture_60）该接口返回 data:null 或无 datas 节点，逐层判断避免 None.get
     data = obj.get("data")
     if not isinstance(data, dict):
         return []
@@ -281,6 +291,7 @@ def render(key, args):
     print(f"- 栏目页：{page['column']}")
     print(f"- 实际取回接口：{durl}")
     print(f"- 所属组：{page['group']}")
+    print(f"- sign：{'运行时从栏目页读取' if COMMON.get('sign_from_page') else '登记常量／命令行指定（若接口报错请核对栏目页 var sign）'}")
     print("- 取回方式：GET（服务端返回 Unicode 转义 HTML，本脚本已解码并提取正文）")
     print()
     print("## 正文（照录，未改写）")
@@ -328,6 +339,13 @@ def main():
         ap.error("请指定 --page 或 --group")
     if args.group and args.page:
         ap.error("--page 与 --group 不可同时使用")
+    # sign 动态读取（站点改版会失效）；仅当用户未显式用 --sign 覆盖时启用
+    if args.sign == COMMON["sign"]:
+        dyn_sign, from_page = rl.read_sign(args.timeout)
+        args.sign = dyn_sign
+    else:
+        from_page = False
+    COMMON["sign_from_page"] = from_page
     keys = ([k for k, v in PAGES.items() if v["group"] == args.group]
             if args.group else [args.page])
     for i, key in enumerate(keys):

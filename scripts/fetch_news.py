@@ -6,7 +6,10 @@
 栏目页：https://lib.bift.edu.cn/engine2/m/037D40C8DF9A6148?p=331274
 本栏目实例参数与空间/学研/资源/借阅四组不同，特指：
     appId=1799821  engineInstanceId=2570405  typeId=5688533
-    sign=3d73194df645a2ef3a5632e7d6fb1a87
+    sign=运行时从栏目页 var sign 读取（读不到用登记常量 sign_fallback）
+    注：sign 会随站点改版变化；2026-11-19 实测旧常量 3d73194df645a2ef3a5632e7d6fb1a87
+    已失效（接口报 mh_engine_50004），当日栏目页读到 23bacb139f886f57287b222a08fb25e4
+    （仅为历史记录，运行时一律现读，不依赖此值）；与 fetch_resource_list.py 同范式动态读取。
 列表接口（返回 419 条 / 5 页，按发布时间倒序，含标题的 key=1 与发布时间的 key=6）：
     GET https://lib.bift.edu.cn/engine2/general/1799821/type/more-clear-datas
     engineInstanceId=2570405 & typeId=5688533 & pageNum=<N> & pageSize=100
@@ -41,7 +44,7 @@ NEWS = {
     "app_id": "1799821",
     "engine_instance_id": "2570405",
     "type_id": "5688533",
-    "sign": "3d73194df645a2ef3a5632e7d6fb1a87",
+    "sign_fallback": "3d73194df645a2ef3a5632e7d6fb1a87",
     "website_id": "186080",
     "page_id": "331274",
     "wfwfid": "33400",
@@ -57,6 +60,18 @@ def get(url, timeout):
             return resp.read().decode("utf-8", "ignore")
     except (urllib.error.URLError, OSError) as exc:
         raise SystemExit(f"取页失败：{exc}\n接口：{url}")
+
+
+def read_sign(timeout):
+    """sign 随站点改版变化，每次运行先读栏目页 var sign；读不到用登记常量。"""
+    try:
+        page = get(NEWS["column"], timeout)
+    except SystemExit:
+        return NEWS["sign_fallback"], False
+    m = re.search(r'var\s+sign\s*=\s*"([0-9a-f]{32})"', page)
+    if not m:
+        return NEWS["sign_fallback"], False
+    return m.group(1), True
 
 
 def decode(raw):
@@ -93,13 +108,13 @@ def extract_images(fragment):
     return urls
 
 
-def list_url(page_num):
+def list_url(page_num, sign):
     q = {
         "engineInstanceId": NEWS["engine_instance_id"],
         "typeId": NEWS["type_id"],
         "pageNum": page_num,
         "pageSize": 100,
-        "sign": NEWS["sign"],
+        "sign": sign,
         "websiteId": NEWS["website_id"],
         "pageId": NEWS["page_id"],
         "wfwfid": NEWS["wfwfid"],
@@ -107,26 +122,31 @@ def list_url(page_num):
     return f"{SITE}/engine2/general/{NEWS['app_id']}/type/more-clear-datas?" + urllib.parse.urlencode(q)
 
 
-def detail_url(data_id):
+def detail_url(data_id, sign):
     q = {
         "engineInstanceId": NEWS["engine_instance_id"],
         "typeId": NEWS["type_id"],
         "sw": "",
-        "sign": NEWS["sign"],
+        "sign": sign,
         "generalDataId": data_id,
     }
     return f"{SITE}/engine2/general/{NEWS['app_id']}/more/detail?" + urllib.parse.urlencode(q)
 
 
-def fetch_list(page_num, timeout):
-    raw = get(list_url(page_num), timeout)
+def fetch_list(page_num, sign, timeout):
+    raw = get(list_url(page_num, sign), timeout)
     try:
         obj = json.loads(raw)
     except json.JSONDecodeError:
-        return [], None, None
-    # 接口异常时 data/datas 可能为 null，逐层判断避免 None.get
+        raise SystemExit(f"最新资讯列表接口返回非 JSON（可能改版/拦截）：{raw[:200]}")
+    # 业务错误（HTTP 200 但 code=0/data=null，如 sign 失效的 mh_engine_50004）须显式报错，
+    # 不得静默当成「无条目」——否则答成「该栏目无相关信息」会误导读者。
     if not isinstance(obj, dict):
-        return [], None, None
+        raise SystemExit(f"最新资讯列表接口返回异常结构：{raw[:200]}")
+    msg = obj.get("message") or obj.get("description") or ""
+    if str(obj.get("code")) not in ("1",) and ("mh_engine" in str(msg) or obj.get("data") is None):
+        raise SystemExit(f"最新资讯列表接口业务错误：{msg or '未知'}（{obj.get('code')}）；"
+                         f"若为 sign 失效请核对栏目页 var sign。接口：{list_url(page_num, sign)}")
     data = obj.get("data")
     if not isinstance(data, dict):
         return [], None, None
@@ -145,11 +165,11 @@ def item_time(it):
     return it.get("6", {}).get("value", "") or ""
 
 
-def print_list(items, total_page, total_records, page_num):
+def print_list(items, total_page, total_records, page_num, sign):
     print(f"# 最新资讯·列表（第 {page_num} 页／共 {total_page} 页，全部 {total_records} 条）")
     print()
     print(f"- 栏目页：{NEWS['column']}")
-    print(f"- 实际取回接口：{list_url(page_num)}")
+    print(f"- 实际取回接口：{list_url(page_num, sign)}")
     print("- 说明：按发布时间倒序；标题取自条目「标题」字段，时间为「发布时间」字段")
     print()
     for i, it in enumerate(items, 1):
@@ -158,8 +178,8 @@ def print_list(items, total_page, total_records, page_num):
         print("（本页无条目）")
 
 
-def print_detail(data_id, timeout, args):
-    durl = detail_url(data_id)
+def print_detail(data_id, timeout, args, sign):
+    durl = detail_url(data_id, sign)
     decoded = decode(get(durl, timeout))
     content = field(decoded, "content") or field(decoded, "introduction") or ""
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -201,15 +221,19 @@ def main():
     if not (args.list or args.search or args.data_id):
         ap.error("请指定 --list、--search 或 --data-id 之一")
 
+    # sign 随站点改版变化，运行时从栏目页读取，读不到用登记常量
+    sign, sign_from_page = read_sign(args.timeout)
+
     if args.search or (args.data_id and not args.list):
-        items, total_page, total_records = fetch_list(1, args.timeout)
+        items, total_page, total_records = fetch_list(1, sign, args.timeout)
         if args.search:
             hits = [it for it in items if args.search in item_title(it)]
             print(f"# 最新资讯·标题匹配「{args.search}」（第 1 页，共 {len(items)} 条中命中 {len(hits)} 条）")
             print()
             print(f"- 栏目页：{NEWS['column']}")
-            print(f"- 列表接口：{list_url(1)}")
+            print(f"- 列表接口：{list_url(1, sign)}")
             print(f"- 全部条目：{total_records} 条 / {total_page} 页；本页为最新 100 条，未命中可翻页 --list --page-num N")
+            print(f"- sign：{'运行时从栏目页读取' if sign_from_page else '栏目页读取失败，使用登记常量（若接口报错请馆员核对）'}")
             print()
             for i, it in enumerate(hits, 1):
                 print(f"{i}. {item_time(it)}｜{item_title(it)}｜dataId={it.get('id')}")
@@ -222,12 +246,12 @@ def main():
                 print("=" * 60)
                 print()
         if args.data_id:
-            print_detail(args.data_id, args.timeout, args)
+            print_detail(args.data_id, args.timeout, args, sign)
         return
 
     if args.list:
-        items, total_page, total_records = fetch_list(args.page_num, args.timeout)
-        print_list(items, total_page, total_records, args.page_num)
+        items, total_page, total_records = fetch_list(args.page_num, sign, args.timeout)
+        print_list(items, total_page, total_records, args.page_num, sign)
 
 
 if __name__ == "__main__":

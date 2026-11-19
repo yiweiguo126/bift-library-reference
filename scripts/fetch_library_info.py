@@ -10,8 +10,10 @@ generalDataType.introduction，表格结构由本脚本转成对齐的 Markdown 
 
 共同接口与参数：
     GET https://lib.bift.edu.cn/engine2/general/1690193/more/detail
-    engineInstanceId=2412452 & typeId=<见上> & sw= & sign=e1c07d97d45eccffc1e99fff0be5699b
+    engineInstanceId=2412452 & typeId=<见上> & sw= & sign=<运行时从栏目页 var sign 动态读取>
 
+sign 随站点改版变化，每次运行复用 fetch_resource_list.read_sign() 从栏目页动态读取，
+读不到才回退登记常量 sign_fallback（原 e1c07d97d45eccffc1e99fff0be5699b 已失效）。
 本脚本只打印到标准输出，不写文件、不缓存：每次运行都取馆方当前最新版本。
 
 用法：
@@ -31,11 +33,13 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+import fetch_resource_list as rl  # 复用其 read_sign()：栏目页动态读 sign
+
 SITE = "https://lib.bift.edu.cn"
 COMMON = {
     "appId": "1690193",
     "engineInstanceId": "2412452",
-    "sign": "e1c07d97d45eccffc1e99fff0be5699b",
+    "sign": "e1c07d97d45eccffc1e99fff0be5699b",  # 登记常量（旧值，仅兜底）
 }
 PAGES = {
     "about": {
@@ -182,6 +186,7 @@ def render(page_key, args):
     print()
     print(f"- 栏目页：{page['column']}")
     print(f"- 实际取回接口：{url}")
+    print(f"- sign：{'运行时从栏目页读取' if COMMON.get('sign_from_page') else '登记常量／命令行指定（若接口报错请核对栏目页 var sign）'}")
     print("- 取回方式：GET（服务端返回 Unicode 转义 HTML，本脚本已解码并提取 introduction，表格转 Markdown 照录）")
     print()
     print("## 正文（照录，未改写）")
@@ -209,7 +214,14 @@ def main():
     args = ap.parse_args()
     COMMON["appId"] = args.app_id
     COMMON["engineInstanceId"] = args.engine_instance_id
-    COMMON["sign"] = args.sign
+    # sign 动态读取（站点改版会失效）；仅当用户未显式用 --sign 覆盖时启用
+    if args.sign == COMMON["sign"]:
+        dyn_sign, from_page = rl.read_sign(args.timeout)
+        COMMON["sign"] = dyn_sign
+        args.sign = dyn_sign
+    else:
+        from_page = False
+    COMMON["sign_from_page"] = from_page
 
     keys = list(PAGES) if args.page == "all" else [args.page]
     for i, key in enumerate(keys):
